@@ -11,5 +11,33 @@
     "Payment & FinTech Systems",
     "Linux Infrastructure"
   ],
-  "status": "open_to_collaborate"
+  "status": "open_to_collaborate",
+  "skills": {
+    "core": {
+      "typescript": "expert",
+      "react": "expert",
+      "next.js": "expert",
+      "php": "veteran",
+      "python": "proficient",
+      "asp-classic": "retired"
+    },
+    "ai": {
+      "llm-integration": "expert",
+      "agentic-architecture": "expert",
+      "mcp-protocol": "advanced",
+      "prompt-engineering": "advanced"
+    },
+    "infrastructure": {
+      "linux": "expert",
+      "docker": "proficient",
+      "gcp": "proficient",
+      "vercel": "expert",
+      "tailscale": "advanced"
+    }
+  },
+  "values": [
+    "先做能跑的，再做完美的",
+    "技術是手段，解決問題才是目的",
+    "AI 不會取代工程師，但會取代不用 AI 的工程師"
+  ]
 }
