@@ -1,9 +1,9 @@
 # iambigwoo — 個人官網 PRD
 
-> **Version:** 0.1.0 (Draft)
+> **Version:** 0.2.0 (Reviewed)
 > **Last Updated:** 2026-03-23
 > **Author:** 大吳 + 小老婆1號
-> **Status:** 🔍 Review
+> **Status:** ✅ Reviewed (Codex GPT-5.4 可行性審查通過，已修正)
 
 ---
 
@@ -58,18 +58,19 @@ const bigwoo = {
 | Animation (Scroll) | GSAP + ScrollTrigger | 3.14.2 | scroll-driven pin/scrub 動畫（免費授權） |
 | GSAP React Binding | @gsap/react | 2.1.2 | useGSAP hook |
 | Smooth Scroll | Lenis | 1.3.19 | Apple 式絲滑慣性滾動 |
-| Code Highlight | Shiki + rehype-pretty-code | 4.0.2 / 0.14.3 | 語法高亮（Catppuccin Mocha 主題） |
-| Blog (MDX) | next-mdx-remote | 6.0.0 | MDX 渲染 + React 元件嵌入 |
-| Blog (Frontmatter) | gray-matter | 4.0.3 | MDX frontmatter 解析 |
-| Blog (Reading Time) | reading-time | 1.5.0 | 閱讀時間估算 |
-| Blog (RSS) | feed | 5.2.0 | RSS / Atom / JSON Feed 生成 |
+| Code Highlight | Shiki + rehype-pretty-code | 1.29.2 / 0.14.3 | 語法高亮（Catppuccin Mocha 主題）⚠️ rehype-pretty-code 目前支援 shiki ^1.0.0 |
+| Blog (MDX) | @next/mdx + @mdx-js/react | latest | Next.js 官方 MDX 整合（本地檔案最佳方案） |
+| Blog (Frontmatter) | gray-matter | 4.0.3 | MDX frontmatter 解析（Phase 2） |
+| Blog (Reading Time) | reading-time | 1.5.0 | 閱讀時間估算（Phase 2） |
+| Blog (RSS) | feed | 5.2.0 | RSS / Atom / JSON Feed 生成（Phase 2） |
 | Form Validation | Zod | 4.3.6 | Schema validation |
 | Form Library | React Hook Form + @hookform/resolvers | 7.72.0 / 5.2.2 | 表單狀態管理 |
 | Icons | Lucide React | 0.577.0 | 圖示系統 |
 | Command Palette | cmdk | 1.1.1 | Cmd+K 快速導航 |
 | shadcn/ui 底層 | class-variance-authority / clsx / tailwind-merge | 0.7.1 / 2.1.1 / 3.5.0 | 變體樣式 + class 合併 |
 | Deployment (Frontend) | Vercel | — | Edge + Analytics |
-| Deployment (Backend/API) | Railway | — | 聯繫表單持久化（Phase 3） |
+| Deployment (Backend/API) | Railway | — | 聯繫表單 DB 持久化 + Email API（Phase 1） |
+| Email Service | Resend | latest | 聯繫表單 Email 通知（bigwoo@gmail.com） |
 | Domain | **bigwoo.app**（待購買） | — | — |
 
 ### 2.1 為什麼選這個技術棧
@@ -81,6 +82,7 @@ const bigwoo = {
 - **GSAP 3.14.2 + ScrollTrigger**：業界 scroll-driven 動畫標準，免費授權（standard license），效能強悍
 - **Framer Motion 12.38.0**：React 生態最強元件動畫庫，與 Next.js RSC 相容
 - **Lenis 1.3.19**：取代 Locomotive Scroll 的新一代 smooth scroll（更輕量、與 GSAP 整合更好）
+- **@next/mdx**：Next.js 官方 MDX 方案，本地 MDX 檔案最佳選擇（`next-mdx-remote` 適用於 remote source，本專案不需要）
 - **Vercel**：Next.js 親兒子，部署 + Edge + Analytics 一站搞定
 - **Railway**：如果後續需要 API / CMS / 聯繫表單後端，Railway 快速部署
 
@@ -90,6 +92,31 @@ const bigwoo = {
 - CI/CD 可重現性
 - 團隊成員 / AI agent 環境一致
 - 升級時主動控制，不被 semver 偷渡 breaking change
+
+**React 版本特別注意**：Next.js App Router 內部使用 React canary releases，React 版本應以 Next.js 相容矩陣為準，不視為獨立鎖版來源。以 `next` 版本為主導，React 跟隨。
+
+### 2.3 瀏覽器支援 Baseline
+
+Tailwind CSS v4 僅支援現代瀏覽器：
+- Chrome / Edge 111+
+- Firefox 128+
+- Safari 16.4+
+- 不支援 IE、舊版 Android WebView
+
+shadcn/ui 在 Tailwind v4 下的設定規則：
+- `components.json` 的 `tailwind.config` 欄位**留空**
+- Theme 改走 CSS variables + `@theme inline`
+- 所有顏色使用 `oklch()` 色彩空間
+
+### 2.4 Phase 0 — 技術驗證門檻
+
+在正式開發前，必須通過以下驗證：
+```bash
+pnpm install && next build  # 所有依賴安裝成功且可 build
+```
+- 確認 Shiki + rehype-pretty-code 版本組合可正常 build
+- 確認 GSAP + Lenis + Framer Motion 三者共存不衝突
+- 確認 shadcn/ui + Tailwind v4 初始化正常
 
 ---
 
@@ -412,11 +439,12 @@ return new Response("收到！我會盡快回覆你 ☕", {
 
 **表單技術實作**：
 - 前端：shadcn/ui Form + React Hook Form + Zod validation
-- 後端：Next.js Server Action → 發送通知到大吳（Email / Line Notify / Discord Webhook 擇一）
-- 通知：**Discord Webhook** → 專用頻道，Embed 格式（含洽詢類型、預算、內容摘要）
+- 後端：Next.js Server Action → **先寫入資料庫，再寄送 Email 通知**
+- 資料持久化：Railway PostgreSQL 或 Supabase（紀錄所有洽詢，方便追蹤、不會掉單）
+- Email 通知：轉寄到 **bigwoo@gmail.com**（使用 Resend / Nodemailer + SMTP）
 - 防 spam：Turnstile（Cloudflare）或 hCaptcha
-- 資料暫存：Railway PostgreSQL 或 Supabase（紀錄所有洽詢，方便追蹤）
 - **不公開 Email**，所有聯繫走表單
+- 失敗處理：Email 發送失敗不影響表單提交成功（DB 已存），定期檢查未寄出通知
 
 **表單欄位**：
 
@@ -444,14 +472,18 @@ return new Response("收到！我會盡快回覆你 ☕", {
 
 ```
 content/
-├── profile.json          # 個人資料、簡介、技術棧
-├── projects.json         # 作品集 / 案例
-├── services.json         # 服務項目
-├── timeline.json         # 職涯時間軸（git log 資料）
-├── stats.json            # 數字亮點
-├── contact.json          # 社群連結
-└── easter-eggs.json      # 彩蛋設定
+├── data/                     # ← JSON 資料統一放 data/ 子目錄
+│   ├── profile.json          # 個人資料、簡介、技術棧
+│   ├── projects.json         # 作品集 / 案例
+│   ├── services.json         # 服務項目
+│   ├── timeline.json         # 職涯時間軸（git log 資料）
+│   ├── stats.json            # 數字亮點
+│   ├── contact.json          # 社群連結
+│   └── easter-eggs.json      # 彩蛋設定
+└── blog/                     # ← MDX 文章
 ```
+
+> ⚠️ 注意：路徑統一為 `content/data/*.json`（與附錄 A 一致），`lib/data.ts` 讀取時以此為準。
 
 #### profile.json（範例）
 
@@ -589,6 +621,35 @@ published: true
 
 對個人網站來說，JSON + MDX 是最合理的——內容不常改，改的時候改檔 push 就好。
 
+### 5.5 JSON Schema 驗證
+
+每份 JSON 內容檔都用 **Zod** 定義 schema 並在 build time 驗證，避免隱性 CMS 失控：
+
+```ts
+// lib/schemas.ts
+import { z } from 'zod'
+
+const ProjectSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string().optional(),
+  role: z.string(),
+  category: z.enum(['fintech', 'ai_agent', 'saas', 'open_source']),
+  stack: z.array(z.string()),
+  highlights: z.array(z.string()),
+  status: z.enum(['production', 'development', 'archived', 'side-project']),
+  impact: z.string().optional(),
+  image: z.string().optional(),
+  url: z.string().url().optional(),
+  visible: z.boolean().default(true),
+  featured: z.boolean().default(false),
+  order: z.number().optional(),
+  tags: z.array(z.string()).default([]),
+})
+```
+
+所有 JSON 讀取透過 `lib/data.ts` 統一進出，build 時 schema 驗證失敗會直接報錯。
+
 ---
 
 ## 6. 視覺風格 & 互動策略
@@ -637,6 +698,27 @@ published: true
 - **Lenis**：smooth scroll，Apple 那種絲滑的慣性滾動感
 - **Framer Motion**：元件級動畫（hover、enter、exit）
 
+**動畫三劍客 Integration Contract（鐵律）**：
+
+責任分工必須嚴格——混用會導致不可預期的行為：
+
+| 工具 | 負責 | 不可觸碰 |
+|------|------|---------|
+| GSAP ScrollTrigger | scroll timeline / pin / scrub | ❌ 不做 hover / enter-exit |
+| Lenis | scroll source（慣性、smooth） | ❌ 不做動畫邏輯 |
+| Framer Motion | hover / enter / exit / 頁面轉場 | ❌ 不進入 ScrollTrigger pin 區段、不用 layout animation 在 scrub 區 |
+
+整合規則：
+```ts
+// lib/gsap.ts — 統一初始化
+lenis.on('scroll', ScrollTrigger.update)         // Lenis 事件驅動 ST 更新
+gsap.ticker.add((time) => lenis.raf(time * 1000)) // GSAP ticker 接管 Lenis RAF
+gsap.ticker.lagSmoothing(0)                       // 關閉 GSAP 的 lag smoothing
+```
+- 所有 GSAP 動畫統一用 `useGSAP` hook + `gsap.context()` 做 cleanup
+- 首頁 scrub 區段**禁止**使用 Framer Motion `layout` / `layoutId`
+- RSC 頁面中，動畫元件必須是獨立的 Client Component（`'use client'`），不可整頁標記
+
 **Apple 產品頁借鏡的手法**：
 
 | Apple 手法 | 我們的對應 |
@@ -647,6 +729,19 @@ published: true
 | 影片 scrub（滾動控制播放進度） | git log 時間軸 scrub |
 | 數字跳動（counter animation） | stats 區塊數字從 0 跳到目標值 |
 | 漸層文字 reveal | 程式碼語法高亮漸顯（先灰色 → 再上色） |
+
+**首頁 Section State Machine**（工程規格）：
+
+| Section | 高度 | Pin | 進場條件 | 動畫進度來源 | 離場條件 | 行動裝置降級 |
+|---------|------|-----|---------|-------------|---------|-------------|
+| 0: Hero | 100vh | 無 | 頁面載入 | 時間（打字機 autoplay） | 滾過 100vh | 靜態程式碼（無打字機） |
+| 1: Sticky Code | 300vh（scroll space） | pin 左側程式碼區 | section 進入 viewport | scrollTrigger scrub 0→1 | scrub 完成 | 單欄、無 pin、staggered fade-in |
+| 2: Timeline | 200vh（scroll space） | pin 時間軸容器 | section 進入 viewport | scrollTrigger scrub 0→1 | scrub 完成 | 簡化為垂直列表、無 scrub |
+| 3: CTA | auto | 無 | section 進入 viewport | Framer Motion inView | — | 同桌機 |
+
+- `prefers-reduced-motion: reduce` → 所有 scrub/pin 降級為靜態展示
+- ScrollTrigger `.refresh()` 在 resize / font load 完成後觸發
+- 每個 section 有獨立的 `gsap.context()` 做 cleanup
 
 #### 內頁 — Bento Grid + Glassmorphism（方案 B）
 
@@ -687,6 +782,37 @@ About / Projects / Services / Blog 採用模組化的 Bento Grid 排版：
 | 動畫量 | 重（scroll-driven） | 輕（hover + enter） |
 | 停留時間 | 長（像看 Apple 產品頁） | 短（快速找到需要的） |
 | 技術人感受 | 「臥槽這 scroll 做得跟 Apple 一樣」 | 「排版乾淨，資訊好找」 |
+
+### 6.0.1 Server / Client Component 邊界規則（鐵律）
+
+Next.js App Router 預設所有 page/layout 為 Server Component，動畫庫（GSAP、Lenis、Motion）需要瀏覽器 API。
+
+**規則**：
+1. **頁面 `page.tsx` 保持 Server Component**——負責資料讀取、metadata、SEO
+2. **動畫只存在於小型 Client Component**——用 `'use client'` 標記
+3. **純瀏覽器依賴元件**用 `next/dynamic(..., { ssr: false })` 包裝
+4. **所有 Hero 文案先 SSR 完整輸出**——打字機、逐行 reveal 只做視覺增強，不承擔資訊揭露
+5. **搜尋引擎看到的是完整可讀頁面**——動畫是 progressive enhancement
+
+```tsx
+// ✅ 正確：page.tsx 是 Server Component
+// app/page.tsx
+import { HeroAnimation } from '@/components/hero-animation' // client component
+import { getProfile } from '@/lib/data'
+
+export default async function Home() {
+  const profile = await getProfile() // server-side 讀 JSON
+  return (
+    <main>
+      {/* SSR 輸出完整文字，動畫元件只管視覺效果 */}
+      <HeroAnimation profile={profile} />
+    </main>
+  )
+}
+
+// ❌ 錯誤：整頁 'use client'
+// 'use client'  ← 這會丟掉所有 SSR/SEO 優勢
+```
 
 ---
 
@@ -771,8 +897,10 @@ const fonts = {
 
 - 動畫只用 `transform` 和 `opacity`（不觸發 layout/paint）
 - 重動畫區段用 `will-change: transform`
-- 行動裝置上減少 scroll-driven 動畫（`prefers-reduced-motion` + 裝置偵測）
-- Lenis 在低效能裝置上 fallback 為原生滾動
+- 遵循**三級降級策略**（見 8.3 節）：行動裝置靜態版、一般桌機簡化版、高階桌機完整版
+- `prefers-reduced-motion: reduce` → 所有 scrub/pin 降級為靜態展示
+- Lenis 在低效能裝置 / 行動裝置上 fallback 為原生滾動
+- Glassmorphism `backdrop-filter: blur()` 在不支援的裝置上降級為 solid background
 - 圖片全部 lazy load + next/image 自動優化
 
 ### 6.4 響應式策略
@@ -791,7 +919,7 @@ const fonts = {
 
 | 彩蛋 | 觸發方式 | 效果 |
 |------|---------|------|
-| **WASD 導航** | 按 WASD 鍵 | W 上滾 / S 下滾 / A 上一頁 / D 下一頁（首次按下時角落顯示提示 HUD，幾秒後淡出） |
+| **WASD 導航** | 按 WASD 鍵（非輸入框狀態） | W 上滾 / S 下滾 / A 上一頁 / D 下一頁（首次按下時角落顯示提示 HUD，幾秒後淡出） |
 | Konami Code | ↑↑↓↓←→←→BA | 解鎖隱藏的 `sudo` 模式，切換特殊主題 |
 | Console Message | 打開 DevTools | 在 console 顯示 ASCII art + 招募訊息 |
 | 404 頁面 | 訪問不存在路由 | `throw new Error("404: this.page is undefined")` |
@@ -799,11 +927,37 @@ const fonts = {
 | `Cmd+K` | 鍵盤快捷鍵 | 開啟 Command Palette 導航 |
 | Terminal 模式 | 特定觸發 | 整頁變成終端機，可輸入指令探索 |
 
+**鍵盤事件管理（Centralized Shortcut Registry）**：
+
+WASD、Cmd+K、Konami、Terminal Mode、表單輸入同時存在，必須統一管理避免事件互撞：
+
+| Scope 層級 | 優先順序 | 包含 | 說明 |
+|-----------|---------|------|------|
+| `input` | 最高 | input / textarea / select / [contenteditable] | 輸入時攔截所有快捷鍵 |
+| `modal` | 高 | cmdk 開啟 / Terminal 模式 | 只處理該 modal 的按鍵，其餘吃掉 |
+| `page` | 中 | WASD 導航 | 頁面級快捷鍵 |
+| `global` | 低 | Cmd+K、Konami Code | 全域監聽 |
+
+規則：
+- 預設忽略 `input/textarea/select/[contenteditable]` 內的所有快捷鍵
+- cmdk 開啟時，WASD / Konami 暫停
+- Terminal 模式啟用時，接管所有鍵盤輸入
+
 ---
 
 ## 8. SEO & 效能
 
-### 8.1 SEO 策略
+### 8.1 SSR-First 內容策略（鐵律）
+
+所有頁面的核心文字內容必須在 SSR 階段完整輸出。動畫（打字機、逐行 reveal、語法高亮漸顯）只做**視覺增強**，不承擔資訊揭露。
+
+原因：
+- 搜尋引擎爬蟲（Googlebot）不一定執行所有 JS
+- 社群分享爬蟲（Open Graph / Twitter Card）幾乎不執行 JS
+- `prefers-reduced-motion` 使用者 / 低效能裝置需要直接看到內容
+- Lighthouse Performance 評分依賴 LCP，空殼 + hydration 會拖慢
+
+### 8.2 SEO 策略
 
 ```ts
 const seoConfig = {
@@ -834,50 +988,73 @@ const seoConfig = {
 
 ### 8.2 效能目標
 
+Core Web Vitals（FID 已於 2024-03 被 INP 取代）：
 - **LCP** < 2.5s
-- **FID** < 100ms
+- **INP** < 200ms（取代 FID）
 - **CLS** < 0.1
 - **TTFB** < 200ms（Vercel Edge）
-- **Bundle Size**：首屏 JS < 100KB（gzipped）
+- **Bundle Size**：首屏 JS < 150KB（gzipped）— 含 GSAP + Lenis，100KB 過於激進
+
+### 8.3 三級動畫降級策略
+
+| 等級 | 條件 | 行為 |
+|------|------|------|
+| 🟢 完整版 | 高階桌機（≥1024px, 高刷新率, 無 reduced-motion） | 全部 scroll-driven + glassmorphism + spotlight |
+| 🟡 簡化版 | 一般桌機 / 平板（或 `prefers-reduced-motion`） | 保留 Lenis smooth scroll，scrub 改為 toggle 觸發，關閉 particles/matrix rain |
+| 🔴 靜態版 | 行動裝置 / 低效能裝置 | 關閉 Lenis（原生滾動）、無 pin/scrub、卡片直接顯示、glassmorphism 降級為 solid card |
+
+偵測方式：
+```ts
+const tier = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'static'
+  : window.innerWidth < 768 ? 'static'
+  : navigator.hardwareConcurrency <= 4 ? 'simplified'
+  : 'full'
+```
 
 ---
 
 ## 9. 開發階段規劃
 
+### Phase 0 — 技術驗證（開工前必過）
+
+- [ ] `pnpm create next-app` + 安裝所有依賴
+- [ ] `pnpm build` 成功（Shiki + rehype-pretty-code 版本驗證）
+- [ ] GSAP + Lenis + Framer Motion 共存 PoC
+- [ ] shadcn/ui + Tailwind v4 初始化 + `@theme inline` 設定
+
 ### Phase 1 — MVP（核心上線）
 
-**目標**：讓網站能看、能用、有基本內容。
+**目標**：讓網站能看、能用、有基本內容。聚焦內容交付，動畫從簡。
 
-- [ ] 專案初始化（Next.js 16 + shadcn/ui + Tailwind v4 + GSAP + Lenis + Framer Motion）
 - [ ] 共用元素（Navigation、Footer、Theme Toggle、Layout）
-- [ ] 首頁 Scroll-Driven IDE Storytelling（Hero 打字機 + Sticky Section + Stats Counter + Timeline Scrub）
-- [ ] 內頁 Bento Grid + Glassmorphism 卡片系統
+- [ ] 首頁 Hero（打字機動畫 + 簡化版 stats counter）— 不含 timeline scrub
 - [ ] 關於我頁面（個人簡介 + 技術棧展示）
 - [ ] 作品集頁面（至少 3-5 個代表性案例）
 - [ ] 服務頁面（列出核心服務項目）
-- [ ] 聯繫頁面（社群連結 + 聯繫表單 + Server Action 後端）
+- [ ] 聯繫頁面（社群連結 + 聯繫表單 + Server Action + DB 持久化 + Email 通知）
 - [ ] 深色主題（Catppuccin Mocha 基底）
 - [ ] 響應式適配（Desktop / Tablet / Mobile）
-- [ ] Blog 功能（MDX 渲染、文章列表、標籤篩選、RSS Feed）
 - [ ] 基礎 SEO（meta tags、OG、sitemap、structured data）
 - [ ] Vercel 部署 + bigwoo.app 網域
 - [ ] 基本 Analytics
 
-### Phase 2 — 打磨
+### Phase 2 — 動畫 & 內容豐富
 
+- [ ] 首頁 Scroll-Driven IDE Storytelling 完整版（Sticky Section + Timeline Scrub）
+- [ ] 內頁 Bento Grid + Glassmorphism 卡片系統
 - [ ] 打字機動畫精修
 - [ ] 頁面轉場動畫
+- [ ] Blog 功能（MDX 渲染、文章列表、標籤篩選、RSS Feed）
 - [ ] `Cmd+K` Command Palette
-- [ ] 語法高亮主題切換（淺色模式）
-- [ ] 互動彩蛋（至少 2-3 個）
+- [ ] 互動彩蛋（WASD 導航 + Konami Code + Console Message）
 - [ ] 效能優化（達到 Lighthouse 目標分數）
-- [ ] i18n（English 版本）
 
 ### Phase 3 — 進階功能
 
+- [ ] 語法高亮主題切換（淺色模式）
+- [ ] i18n（English 版本）
 - [ ] Terminal 互動模式
 - [ ] 動態作品集（從 GitHub / GitLab API 拉資料）
-- [ ] 聯繫表單資料持久化（Railway PostgreSQL 或 Supabase）
 - [ ] 暗黑模式以外的主題包（Catppuccin Latte / Frappe / Macchiato）
 - [ ] 系列文章（Blog Series）功能
 
@@ -893,7 +1070,7 @@ const seoConfig = {
 - [ ] **服務項目確認**：日後補充到 `services.json`
 - [x] **聯繫方式**：Facebook (iambigwoo) / Instagram (bigwoo) / Line (iambigwoo) / GitHub (BIGWOO)
 - [x] **Email**：不公開，全部走聯繫表單
-- [x] **表單通知管道**：Discord Webhook → 專用頻道接收洽詢通知（Embed 格式）
+- [x] **表單通知管道**：Email 轉寄到 bigwoo@gmail.com + 資料庫持久化（Phase 1 即包含）
 - [x] **頭像**：暫時使用風格化頭像
 - [x] **文案語氣**：程式碼英文 + 註解中文（如 `const role = "CTO" // 技術長`）
 - [x] **OG Image**：沿用 FB 封面圖風格
@@ -961,8 +1138,9 @@ iambigwoo/
 │   └── use-spotlight.ts        # 滑鼠光暈追蹤 hook
 ├── lib/
 │   ├── data.ts                 # JSON 讀取工具
+│   ├── schemas.ts              # Zod schemas for JSON validation
 │   ├── mdx.ts                  # MDX 解析工具
-│   ├── gsap.ts                 # GSAP + ScrollTrigger + Lenis 初始化
+│   ├── gsap.ts                 # GSAP + ScrollTrigger + Lenis 初始化（Integration Contract）
 │   ├── fonts.ts                # 字型設定
 │   └── utils.ts                # 工具函式
 ├── public/
