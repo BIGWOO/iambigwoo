@@ -47,26 +47,49 @@ const bigwoo = {
 
 ## 2. 技術棧
 
-| 層級 | 技術 | 版本 |
-|------|------|------|
-| Framework | Next.js | 16.2.1 |
-| UI Library | React | 19.2.4 |
-| UI Components | shadcn/ui | latest |
-| Styling | Tailwind CSS | v4 |
-| Language | TypeScript | 5.x |
-| Animation | Framer Motion | latest |
-| Code Highlight | Shiki / rehype-pretty-code | latest |
-| Blog | MDX + next-mdx-remote | latest |
-| Deployment (Frontend) | Vercel | — |
-| Deployment (Backend/API) | Railway | — |
-| Domain | **bigwoo.app**（待購買，尚未被註冊） | — |
+| 層級 | 技術 | 版本 | 用途 |
+|------|------|------|------|
+| Framework | Next.js | 16.2.1 | App Router + RSC + Server Actions |
+| UI Library | React | 19.2.4 | — |
+| UI Components | shadcn/ui (CLI: shadcn) | 4.1.0 | Radix UI + Tailwind 元件系統 |
+| Styling | Tailwind CSS | 4.2.2 | Utility-first CSS |
+| Language | TypeScript | 5.9.3 | — |
+| Animation (Component) | Framer Motion | 12.38.0 | 元件級動畫、hover、頁面轉場 |
+| Animation (Scroll) | GSAP + ScrollTrigger | 3.14.2 | scroll-driven pin/scrub 動畫（免費授權） |
+| GSAP React Binding | @gsap/react | 2.1.2 | useGSAP hook |
+| Smooth Scroll | Lenis | 1.3.19 | Apple 式絲滑慣性滾動 |
+| Code Highlight | Shiki + rehype-pretty-code | 4.0.2 / 0.14.3 | 語法高亮（Catppuccin Mocha 主題） |
+| Blog (MDX) | next-mdx-remote | 6.0.0 | MDX 渲染 + React 元件嵌入 |
+| Blog (Frontmatter) | gray-matter | 4.0.3 | MDX frontmatter 解析 |
+| Blog (Reading Time) | reading-time | 1.5.0 | 閱讀時間估算 |
+| Blog (RSS) | feed | 5.2.0 | RSS / Atom / JSON Feed 生成 |
+| Form Validation | Zod | 4.3.6 | Schema validation |
+| Form Library | React Hook Form + @hookform/resolvers | 7.72.0 / 5.2.2 | 表單狀態管理 |
+| Icons | Lucide React | 0.577.0 | 圖示系統 |
+| Command Palette | cmdk | 1.1.1 | Cmd+K 快速導航 |
+| shadcn/ui 底層 | class-variance-authority / clsx / tailwind-merge | 0.7.1 / 2.1.1 / 3.5.0 | 變體樣式 + class 合併 |
+| Deployment (Frontend) | Vercel | — | Edge + Analytics |
+| Deployment (Backend/API) | Railway | — | 聯繫表單持久化（Phase 3） |
+| Domain | **bigwoo.app**（待購買） | — | — |
 
 ### 2.1 為什麼選這個技術棧
 
-- **Next.js 16 + React 19**：Server Components + Actions，SEO 友好且效能極佳
-- **shadcn/ui**：可客製化程度高、不綁定特定設計系統、copy-paste 架構便於深度修改
+- **Next.js 16.2.1 + React 19.2.4**：最新穩定版，Server Components + Actions，SEO 友好且效能極佳
+- **TypeScript 5.9.3**：最新版，滿血型別推導
+- **Tailwind CSS 4.2.2**：v4 架構，CSS-first config、Lightning CSS 引擎
+- **shadcn/ui 4.1.0**：可客製化程度高、不綁定特定設計系統、copy-paste 架構便於深度修改
+- **GSAP 3.14.2 + ScrollTrigger**：業界 scroll-driven 動畫標準，免費授權（standard license），效能強悍
+- **Framer Motion 12.38.0**：React 生態最強元件動畫庫，與 Next.js RSC 相容
+- **Lenis 1.3.19**：取代 Locomotive Scroll 的新一代 smooth scroll（更輕量、與 GSAP 整合更好）
 - **Vercel**：Next.js 親兒子，部署 + Edge + Analytics 一站搞定
 - **Railway**：如果後續需要 API / CMS / 聯繫表單後端，Railway 快速部署
+
+### 2.2 版本鎖定策略
+
+所有依賴使用 **exact version**（`--save-exact`），確保：
+- CI/CD 可重現性
+- 團隊成員 / AI agent 環境一致
+- 升級時主動控制，不被 semver 偷渡 breaking change
 
 ---
 
@@ -568,9 +591,106 @@ published: true
 
 ---
 
-## 6. 設計規範
+## 6. 視覺風格 & 互動策略
 
-### 5.1 色彩系統
+### 6.0 風格定調：Scroll-Driven IDE × Bento Grid
+
+混搭兩種設計語言，**首頁是沉浸式體驗，內頁是高效資訊展示**：
+
+#### 首頁 — Scroll-Driven IDE Storytelling（方案 A）
+
+靈感來源：Apple 產品介紹頁的敘事節奏 × 程式碼編輯器的視覺語言。
+
+**核心體驗**：滾動即執行——訪客每往下滾，就像在 IDE 裡 step through 一段程式碼，每一步揭示大吳的一個面向。
+
+```
+滾動區段設計（Scroll Sections）：
+┌──────────────────────────────────────────────┐
+│  Section 0: Hero                              │
+│  ┌────────────────────────────────────────┐   │
+│  │ import bigwoo from "taipei"            │   │
+│  │ // 打字機動畫，逐行顯現               │   │
+│  │ // 背景：微粒子 + 程式碼矩陣雨        │   │
+│  └────────────────────────────────────────┘   │
+├──────────────────────────────────────────────┤
+│  Section 1: Sticky Code + Animated Output     │
+│  ┌──────────┬─────────────────────────────┐   │
+│  │ 程式碼   │  視覺化輸出                 │   │
+│  │（固定左）│ （滾動觸發動畫）            │   │
+│  │          │  → 技術棧光環圖             │   │
+│  │ 當前行   │  → 數字統計跳動             │   │
+│  │ 高亮     │  → 專案卡片飛入             │   │
+│  └──────────┴─────────────────────────────┘   │
+├──────────────────────────────────────────────┤
+│  Section 2: Timeline Scrub                    │
+│  git log 時間軸，用 scroll position 控制      │
+│  滾到哪年就展開那年的內容                     │
+│  像 Apple Watch 產品頁的「旋轉展示」手法      │
+├──────────────────────────────────────────────┤
+│  Section 3: CTA                               │
+│  bigwoo.contact() — 呼叫行動                  │
+└──────────────────────────────────────────────┘
+```
+
+**技術實作**：
+- **GSAP ScrollTrigger**：pin sections、scrub animations（滾動位置 1:1 控制動畫進度）
+- **Lenis**：smooth scroll，Apple 那種絲滑的慣性滾動感
+- **Framer Motion**：元件級動畫（hover、enter、exit）
+
+**Apple 產品頁借鏡的手法**：
+
+| Apple 手法 | 我們的對應 |
+|-----------|-----------|
+| 大字標題 scroll reveal | 程式碼區塊逐行亮起 |
+| 產品 3D 旋轉 | 技術棧光環圖旋轉 |
+| Sticky left + scroll right | 程式碼固定左側 + 右側動態輸出 |
+| 影片 scrub（滾動控制播放進度） | git log 時間軸 scrub |
+| 數字跳動（counter animation） | stats 區塊數字從 0 跳到目標值 |
+| 漸層文字 reveal | 程式碼語法高亮漸顯（先灰色 → 再上色） |
+
+#### 內頁 — Bento Grid + Glassmorphism（方案 B）
+
+About / Projects / Services / Blog 採用模組化的 Bento Grid 排版：
+
+```
+內頁佈局概念：
+┌─────────┬──────────────────┐
+│  大卡片  │    中卡片         │
+│  (2×2)  │    (2×1)         │
+│         ├────────┬─────────┤
+│         │ 小卡片  │ 小卡片   │
+│         │ (1×1)  │ (1×1)   │
+├─────────┼────────┴─────────┤
+│  寬卡片  │    中卡片         │
+│  (2×1)  │    (2×1)         │
+└─────────┴──────────────────┘
+```
+
+**視覺特徵**：
+- **Glassmorphism 卡片**：半透明毛玻璃效果 + 微光邊框
+- **Hover 微光**：滑鼠經過時邊框產生光暈跟隨效果（像 Linear.app）
+- **Staggered Animation**：卡片依序浮現，間隔 50-100ms
+- **Spotlight Effect**：滑鼠附近的卡片微微發亮，遠處的微微暗下去
+- **每張卡片都是獨立的互動單元**，有自己的微動畫
+
+**靈感參考**：
+- **Linear.app**：卡片光暈效果、暗色高級感
+- **Vercel.com**：Bento Grid 排版、漸層光影
+- **Raycast.com**：毛玻璃卡片、精緻的邊框光效
+
+#### 為什麼混搭
+
+| 維度 | 首頁（A） | 內頁（B） |
+|------|----------|----------|
+| 目的 | 留下深刻印象、展現品味 | 高效傳達資訊、方便瀏覽 |
+| 互動 | 沉浸式、線性敘事 | 模組化、自由探索 |
+| 動畫量 | 重（scroll-driven） | 輕（hover + enter） |
+| 停留時間 | 長（像看 Apple 產品頁） | 短（快速找到需要的） |
+| 技術人感受 | 「臥槽這 scroll 做得跟 Apple 一樣」 | 「排版乾淨，資訊好找」 |
+
+---
+
+### 6.1 色彩系統
 
 基於 **Catppuccin Mocha**（大吳的終端機色系），延伸為網站設計語言：
 
@@ -599,7 +719,7 @@ const palette = {
 }
 ```
 
-### 5.2 字型
+### 6.2 字型
 
 ```ts
 const fonts = {
@@ -614,16 +734,48 @@ const fonts = {
 }
 ```
 
-### 5.3 動畫原則
+### 6.3 動畫系統
 
-- **打字機效果**：Hero 區域的程式碼逐行 / 逐字出現
-- **語法高亮漸顯**：先顯示純文字，再上色
-- **Hover 效果**：程式碼區塊 hover 時顯示 tooltip（像 IDE 的 type hint）
-- **頁面轉場**：檔案 Tab 切換的概念
-- **滾動觸發**：各區塊滾動進入時啟動動畫
-- **光標閃爍**：模擬編輯器光標
+#### 動畫分層
 
-### 5.4 響應式策略
+| 層級 | 工具 | 用途 | 效能考量 |
+|------|------|------|---------|
+| Page-level scroll | GSAP ScrollTrigger | pin、scrub、timeline | GPU accelerated、will-change |
+| Smooth scroll | Lenis | 全站絲滑滾動 | RAF-based、低開銷 |
+| Component enter/exit | Framer Motion | 元件出現/消失動畫 | AnimatePresence + layout |
+| Hover / micro | Framer Motion | 按鈕、卡片微互動 | whileHover、transition spring |
+| Code typing | Custom hook | 打字機效果 | requestAnimationFrame |
+
+#### 首頁動畫清單
+
+| 區段 | 動畫效果 | GSAP 手法 |
+|------|---------|----------|
+| Hero | 程式碼逐行打字 + 語法高亮漸顯 | Timeline + onComplete callback |
+| Section 1 | 左側程式碼 pin + 右側內容 scrub | ScrollTrigger pin + scrub: true |
+| 技術棧 | 光環圖旋轉、技能浮現 | scrub rotation + stagger |
+| Stats | 數字從 0 跳到目標值 | ScrollTrigger + counter tween |
+| Timeline | git log 滾動展開 | scrub + stagger + clip-path reveal |
+| CTA | 視差 + fade in | ScrollTrigger + y offset |
+
+#### 內頁動畫清單
+
+| 元素 | 動畫效果 | 工具 |
+|------|---------|------|
+| Bento 卡片 | staggered fade-up 依序浮現 | Framer Motion + viewport |
+| 卡片 hover | 邊框光暈跟隨滑鼠 | CSS + onMouseMove |
+| Spotlight | 滑鼠附近卡片微亮 | Framer Motion + pointer |
+| 頁面轉場 | IDE tab 切換感 | Framer Motion layout |
+| 程式碼區塊 | hover 顯示 type hint tooltip | Framer Motion whileHover |
+
+#### 效能守則
+
+- 動畫只用 `transform` 和 `opacity`（不觸發 layout/paint）
+- 重動畫區段用 `will-change: transform`
+- 行動裝置上減少 scroll-driven 動畫（`prefers-reduced-motion` + 裝置偵測）
+- Lenis 在低效能裝置上 fallback 為原生滾動
+- 圖片全部 lazy load + next/image 自動優化
+
+### 6.4 響應式策略
 
 | 斷點 | 行為 |
 |------|------|
@@ -633,7 +785,7 @@ const fonts = {
 
 ---
 
-## 6. 互動彩蛋 (Easter Eggs)
+## 7. 互動彩蛋 (Easter Eggs)
 
 讓技術人會心一笑的小巧思：
 
@@ -649,9 +801,9 @@ const fonts = {
 
 ---
 
-## 7. SEO & 效能
+## 8. SEO & 效能
 
-### 7.1 SEO 策略
+### 8.1 SEO 策略
 
 ```ts
 const seoConfig = {
@@ -680,7 +832,7 @@ const seoConfig = {
 }
 ```
 
-### 7.2 效能目標
+### 8.2 效能目標
 
 - **LCP** < 2.5s
 - **FID** < 100ms
@@ -690,15 +842,16 @@ const seoConfig = {
 
 ---
 
-## 8. 開發階段規劃
+## 9. 開發階段規劃
 
 ### Phase 1 — MVP（核心上線）
 
 **目標**：讓網站能看、能用、有基本內容。
 
-- [ ] 專案初始化（Next.js 16 + shadcn/ui + Tailwind v4）
+- [ ] 專案初始化（Next.js 16 + shadcn/ui + Tailwind v4 + GSAP + Lenis + Framer Motion）
 - [ ] 共用元素（Navigation、Footer、Theme Toggle、Layout）
-- [ ] 首頁 Hero Section（程式碼偽裝自介 + 打字機動畫）
+- [ ] 首頁 Scroll-Driven IDE Storytelling（Hero 打字機 + Sticky Section + Stats Counter + Timeline Scrub）
+- [ ] 內頁 Bento Grid + Glassmorphism 卡片系統
 - [ ] 關於我頁面（個人簡介 + 技術棧展示）
 - [ ] 作品集頁面（至少 3-5 個代表性案例）
 - [ ] 服務頁面（列出核心服務項目）
@@ -730,7 +883,7 @@ const seoConfig = {
 
 ---
 
-## 9. 內容待確認項目
+## 10. 內容待確認項目
 
 > 以下需要大吳提供或確認：
 
@@ -748,7 +901,7 @@ const seoConfig = {
 
 ---
 
-## 10. 參考與靈感
+## 11. 參考與靈感
 
 > 同類型優秀的開發者個人網站：
 
@@ -802,9 +955,14 @@ iambigwoo/
 │   └── blog/                   # ← MDX 文章（加檔案就加文章）
 │       ├── my-first-post.mdx
 │       └── ...
+├── hooks/
+│   ├── use-typing-animation.ts # 打字機動畫 hook
+│   ├── use-scroll-section.ts   # GSAP ScrollTrigger wrapper
+│   └── use-spotlight.ts        # 滑鼠光暈追蹤 hook
 ├── lib/
 │   ├── data.ts                 # JSON 讀取工具
 │   ├── mdx.ts                  # MDX 解析工具
+│   ├── gsap.ts                 # GSAP + ScrollTrigger + Lenis 初始化
 │   ├── fonts.ts                # 字型設定
 │   └── utils.ts                # 工具函式
 ├── public/
