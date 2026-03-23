@@ -1,0 +1,17 @@
+{
+  "konami": {
+    "trigger": "↑↑↓↓←→←→BA",
+    "effect": "matrix-rain",
+    "description": "觸發程式碼矩陣雨效果"
+  },
+  "console": {
+    "trigger": "DevTools console",
+    "message": "嘿，你也是工程師吧？來聊聊 → bigwoo.contact()",
+    "description": "開發者工具中顯示招呼訊息"
+  },
+  "vim": {
+    "trigger": ":q!",
+    "effect": "terminal-exit",
+    "description": "嘗試退出本網站（致敬 Vim）"
+  }
+}

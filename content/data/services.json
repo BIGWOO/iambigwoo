@@ -1,0 +1,30 @@
+[
+  {
+    "id": "consulting",
+    "name": "技術顧問 & 架構規劃",
+    "description": "技術棧選型建議、系統架構設計與審查、效能優化與技術債評估、AI / LLM 導入策略",
+    "idealFor": ["需要技術決策支持的新創團隊", "考慮 AI 轉型的傳統企業", "需要獨立技術審查的專案"],
+    "icon": "brain"
+  },
+  {
+    "id": "ai-integration",
+    "name": "AI / LLM 整合開發",
+    "description": "LLM 應用開發、Agentic Workflow 建置、MCP Protocol 整合、RAG 系統設計",
+    "idealFor": ["想導入 AI 的產品團隊", "需要 AI Agent 解決方案的企業", "需要 LLM 技術評估的團隊"],
+    "icon": "bot"
+  },
+  {
+    "id": "fullstack",
+    "name": "全端 Web 應用開發",
+    "description": "Next.js / React 前端、Node.js / PHP 後端、PostgreSQL / MySQL 資料庫、雲端部署與 DevOps",
+    "idealFor": ["需要快速上線的新創", "需要系統重構的成熟產品", "需要技術升級的傳統網站"],
+    "icon": "code"
+  },
+  {
+    "id": "mentoring",
+    "name": "技術團隊 Mentoring",
+    "description": "Code Review 制度建立、技術文化推動、AI 工具導入教學、團隊技能培訓",
+    "idealFor": ["剛建立技術團隊的公司", "想提升工程文化的組織", "需要 AI 工具培訓的團隊"],
+    "icon": "users"
+  }
+]

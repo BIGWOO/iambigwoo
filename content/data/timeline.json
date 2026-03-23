@@ -1,0 +1,38 @@
+[
+  {
+    "hash": "a1b2c3d",
+    "ref": "HEAD -> present",
+    "date": "2024-present",
+    "type": "feat",
+    "scope": "career",
+    "title": "綠界大數據 CTO",
+    "description": ["AI/LLM 整合", "產品技術策略"]
+  },
+  {
+    "hash": "e4f5g6h",
+    "ref": null,
+    "date": "20XX-20XX",
+    "type": "feat",
+    "scope": "career",
+    "title": "待補充經歷",
+    "description": ["主導技術架構升級", "帶領團隊從 0 到 1"]
+  },
+  {
+    "hash": "b8c9d0e",
+    "ref": null,
+    "date": "2002-20XX",
+    "type": "feat",
+    "scope": "career",
+    "title": "台灣電玩勁檔 & SOC GAMING 電子競技職業聯盟",
+    "description": ["PHP 全端開發", "電競社群平台建置"]
+  },
+  {
+    "hash": "0000001",
+    "ref": "root",
+    "date": "2000",
+    "type": "init",
+    "scope": null,
+    "title": "Counter-Strike 社群網站",
+    "description": ["ASP 開發，一切的起點", "從玩家變成開發者"]
+  }
+]

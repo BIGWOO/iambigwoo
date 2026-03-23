@@ -1,0 +1,44 @@
+[
+  {
+    "id": "cashback",
+    "name": "CashBack 現金回饋平台",
+    "role": "Tech Lead & Architect",
+    "category": "fintech",
+    "stack": ["Next.js", "PHP", "PostgreSQL", "GCP"],
+    "highlights": ["多合作夥伴整合", "完整金流生命週期管理", "自動化稅務處理"],
+    "status": "production",
+    "impact": "處理數百萬筆交易",
+    "visible": true,
+    "featured": true,
+    "order": 1,
+    "tags": ["fintech", "payment"]
+  },
+  {
+    "id": "freestore",
+    "name": "FreeStore 免費開店平台",
+    "role": "Tech Lead & Architect",
+    "category": "saas",
+    "stack": ["PHP", "MySQL", "Vue.js", "GCP"],
+    "highlights": ["多店鋪 SaaS 架構", "自訂前台模板系統", "整合金流與物流"],
+    "status": "production",
+    "impact": "服務數百家商店",
+    "visible": true,
+    "featured": true,
+    "order": 2,
+    "tags": ["saas", "ecommerce"]
+  },
+  {
+    "id": "ai-agent-workflow",
+    "name": "AI Agent 工作流自動化",
+    "role": "Builder & Architect",
+    "category": "ai_agent",
+    "stack": ["TypeScript", "OpenAI", "Claude", "MCP"],
+    "highlights": ["Agentic Architecture 實踐", "多 Agent 協作系統", "MCP Protocol 整合"],
+    "status": "production",
+    "impact": "團隊效率提升數倍",
+    "visible": true,
+    "featured": true,
+    "order": 3,
+    "tags": ["ai", "agent", "automation"]
+  }
+]
