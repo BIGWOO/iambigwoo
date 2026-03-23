@@ -1,6 +1,6 @@
 # iambigwoo — 個人官網 PRD
 
-> **Version:** 0.2.0 (Reviewed)
+> **Version:** 0.3.0 (Round 2 Reviewed)
 > **Last Updated:** 2026-03-23
 > **Author:** 大吳 + 小老婆1號
 > **Status:** ✅ Reviewed (Codex GPT-5.4 可行性審查通過，已修正)
@@ -69,8 +69,9 @@ const bigwoo = {
 | Command Palette | cmdk | 1.1.1 | Cmd+K 快速導航 |
 | shadcn/ui 底層 | class-variance-authority / clsx / tailwind-merge | 0.7.1 / 2.1.1 / 3.5.0 | 變體樣式 + class 合併 |
 | Deployment (Frontend) | Vercel | — | Edge + Analytics |
-| Deployment (Backend/API) | Railway | — | 聯繫表單 DB 持久化 + Email API（Phase 1） |
-| Email Service | Resend | latest | 聯繫表單 Email 通知（bigwoo@gmail.com） |
+| Deployment (Backend/API) | Railway | — | PostgreSQL + 聯繫表單 DB 持久化（Phase 1） |
+| Email Service | Resend | latest | 聯繫表單 Email 通知 → bigwoo@gmail.com |
+| Anti-Spam | Cloudflare Turnstile | — | 無感人機驗證（Phase 1） |
 | Domain | **bigwoo.app**（待購買） | — | — |
 
 ### 2.1 為什麼選這個技術棧
@@ -138,7 +139,7 @@ pnpm install && next build  # 所有依賴安裝成功且可 build
 
 - **Navigation**：頂部導航列，桌面版水平 / 行動版漢堡選單
 - **Footer**：社群連結 + 版權 + 用程式碼風格呈現
-- **Theme**：深色主題為主（呼應 code editor 氛圍），支援淺色切換
+- **Theme**：**Phase 1 深色主題 only**（呼應 code editor 氛圍）。淺色模式延至 Phase 3
 - **Command Palette**：`Cmd+K` 快速搜尋 / 導航（致敬 IDE 體驗）
 
 ---
@@ -351,7 +352,7 @@ enum ProjectCategory {
 **展示方式**：
 - 卡片 Grid 佈局
 - 每張卡片有專案名稱、角色、技術棧標籤、狀態 badge
-- 點擊可展開為 Detail Modal 或跳轉到專案詳情頁
+- 點擊展開為 **Detail Modal**（Phase 1 不做獨立詳情頁，未來可加 `/projects/[slug]`）
 - 支援按分類、技術棧篩選
 
 ---
@@ -440,11 +441,44 @@ return new Response("收到！我會盡快回覆你 ☕", {
 **表單技術實作**：
 - 前端：shadcn/ui Form + React Hook Form + Zod validation
 - 後端：Next.js Server Action → **先寫入資料庫，再寄送 Email 通知**
-- 資料持久化：Railway PostgreSQL 或 Supabase（紀錄所有洽詢，方便追蹤、不會掉單）
-- Email 通知：轉寄到 **bigwoo@gmail.com**（使用 Resend / Nodemailer + SMTP）
-- 防 spam：Turnstile（Cloudflare）或 hCaptcha
+- 資料持久化：**Railway PostgreSQL**（紀錄所有洽詢，方便追蹤、不會掉單）
+- Email 通知：**Resend** → 轉寄到 **bigwoo@gmail.com**
+- 防 spam：**Cloudflare Turnstile**（免費、無感驗證）
 - **不公開 Email**，所有聯繫走表單
 - 失敗處理：Email 發送失敗不影響表單提交成功（DB 已存），定期檢查未寄出通知
+
+**表單後端 Schema**：
+
+```sql
+CREATE TABLE contact_submissions (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name          VARCHAR(100) NOT NULL,
+  email         VARCHAR(255) NOT NULL,
+  inquiry_type  VARCHAR(50) NOT NULL,  -- consulting | project | collaboration | other
+  budget        VARCHAR(50),            -- nullable
+  message       TEXT NOT NULL,
+  status        VARCHAR(20) DEFAULT 'pending',  -- pending | email_sent | email_failed | replied
+  email_sent_at TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  ip_address    INET,
+  user_agent    TEXT
+);
+
+CREATE INDEX idx_contact_status ON contact_submissions(status);
+CREATE INDEX idx_contact_created ON contact_submissions(created_at DESC);
+```
+
+**環境變數**：
+```env
+DATABASE_URL=postgresql://...          # Railway PostgreSQL
+RESEND_API_KEY=re_...                  # Resend API Key
+RESEND_FROM=noreply@bigwoo.app         # 寄件者（需 DNS 驗證）
+NOTIFICATION_EMAIL=bigwoo@gmail.com    # 收件者
+TURNSTILE_SITE_KEY=...                 # Cloudflare Turnstile
+TURNSTILE_SECRET_KEY=...               # Cloudflare Turnstile
+```
+
+**資料保留**：永久保留（量小、有追蹤價值）。
 
 **表單欄位**：
 
@@ -611,15 +645,18 @@ published: true
 - 系列文章（Series）支援
 - AI 協作撰稿（由小老婆1號協助產出草稿，大吳審閱後發布）
 
-### 5.4 為什麼不用資料庫
+### 5.4 資料儲存策略
 
-| 方案 | 優點 | 缺點 |
-|------|------|------|
-| **JSON + MDX（採用）** | 零成本、Git 版控、部署即生效、改檔就好 | 不適合高頻動態更新 |
-| CMS (Notion/Sanity) | 視覺化編輯 | 多一層依賴、API 延遲 |
-| 資料庫 | 動態查詢 | 過度工程、需要後端 |
+**網站內容**（個人資料、專案、經歷）→ **JSON + MDX 檔案**（Git 版控、零成本、改檔 push 即生效）
 
-對個人網站來說，JSON + MDX 是最合理的——內容不常改，改的時候改檔 push 就好。
+**使用者提交資料**（聯繫表單）→ **Railway PostgreSQL**（持久化、可追蹤、不會掉單）
+
+| 方案 | 適用場景 | 用途 |
+|------|---------|------|
+| **JSON + MDX（靜態內容）** | 個人資料、專案、服務、經歷、Blog | 零成本、Git 版控、部署即生效 |
+| **Railway PostgreSQL（動態資料）** | 聯繫表單提交紀錄 | 持久化、可查詢、可追蹤狀態 |
+
+對個人網站來說，靜態內容用 JSON + MDX 最合理——改檔 push 就好。需要持久化的使用者提交資料才進 DB。
 
 ### 5.5 JSON Schema 驗證
 
@@ -986,7 +1023,7 @@ const seoConfig = {
 }
 ```
 
-### 8.2 效能目標
+### 8.3 效能目標
 
 Core Web Vitals（FID 已於 2024-03 被 INP 取代）：
 - **LCP** < 2.5s
@@ -995,13 +1032,13 @@ Core Web Vitals（FID 已於 2024-03 被 INP 取代）：
 - **TTFB** < 200ms（Vercel Edge）
 - **Bundle Size**：首屏 JS < 150KB（gzipped）— 含 GSAP + Lenis，100KB 過於激進
 
-### 8.3 三級動畫降級策略
+### 8.4 三級動畫降級策略
 
 | 等級 | 條件 | 行為 |
 |------|------|------|
 | 🟢 完整版 | 高階桌機（≥1024px, 高刷新率, 無 reduced-motion） | 全部 scroll-driven + glassmorphism + spotlight |
-| 🟡 簡化版 | 一般桌機 / 平板（或 `prefers-reduced-motion`） | 保留 Lenis smooth scroll，scrub 改為 toggle 觸發，關閉 particles/matrix rain |
-| 🔴 靜態版 | 行動裝置 / 低效能裝置 | 關閉 Lenis（原生滾動）、無 pin/scrub、卡片直接顯示、glassmorphism 降級為 solid card |
+| 🟡 簡化版 | 一般桌機 / 平板（hardwareConcurrency ≤ 4） | 保留 Lenis smooth scroll，scrub 改為 toggle 觸發，關閉 particles/matrix rain |
+| 🔴 靜態版 | 行動裝置 / 低效能裝置 / **`prefers-reduced-motion: reduce`** | 關閉 Lenis（原生滾動）、無 pin/scrub、卡片直接顯示、glassmorphism 降級為 solid card |
 
 偵測方式：
 ```ts
@@ -1021,18 +1058,19 @@ const tier = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'static'
 - [ ] `pnpm build` 成功（Shiki + rehype-pretty-code 版本驗證）
 - [ ] GSAP + Lenis + Framer Motion 共存 PoC
 - [ ] shadcn/ui + Tailwind v4 初始化 + `@theme inline` 設定
+- [ ] 表單全鏈路 PoC：Server Action → Railway PostgreSQL 寫入 → Resend 寄信 → Turnstile 驗證
 
 ### Phase 1 — MVP（核心上線）
 
 **目標**：讓網站能看、能用、有基本內容。聚焦內容交付，動畫從簡。
 
-- [ ] 共用元素（Navigation、Footer、Theme Toggle、Layout）
+- [ ] 共用元素（Navigation、Footer、Layout）— Phase 1 暗色 only，不含 Theme Toggle
 - [ ] 首頁 Hero（打字機動畫 + 簡化版 stats counter）— 不含 timeline scrub
 - [ ] 關於我頁面（個人簡介 + 技術棧展示）
 - [ ] 作品集頁面（至少 3-5 個代表性案例）
 - [ ] 服務頁面（列出核心服務項目）
 - [ ] 聯繫頁面（社群連結 + 聯繫表單 + Server Action + DB 持久化 + Email 通知）
-- [ ] 深色主題（Catppuccin Mocha 基底）
+- [ ] 深色主題 only（Catppuccin Mocha 基底）— 不含淺色模式
 - [ ] 響應式適配（Desktop / Tablet / Mobile）
 - [ ] 基礎 SEO（meta tags、OG、sitemap、structured data）
 - [ ] Vercel 部署 + bigwoo.app 網域
@@ -1043,7 +1081,7 @@ const tier = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'static'
 - [ ] 首頁 Scroll-Driven IDE Storytelling 完整版（Sticky Section + Timeline Scrub）
 - [ ] 內頁 Bento Grid + Glassmorphism 卡片系統
 - [ ] 打字機動畫精修
-- [ ] 頁面轉場動畫
+- [ ] 頁面轉場動畫（Framer Motion，若 App Router 相容性不穩定可 fallback 為無轉場）
 - [ ] Blog 功能（MDX 渲染、文章列表、標籤篩選、RSS Feed）
 - [ ] `Cmd+K` Command Palette
 - [ ] 互動彩蛋（WASD 導航 + Konami Code + Console Message）
@@ -1051,7 +1089,7 @@ const tier = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'static'
 
 ### Phase 3 — 進階功能
 
-- [ ] 語法高亮主題切換（淺色模式）
+- [ ] 淺色模式 + Theme Toggle（Catppuccin Latte）+ 語法高亮主題切換
 - [ ] i18n（English 版本）
 - [ ] Terminal 互動模式
 - [ ] 動態作品集（從 GitHub / GitLab API 拉資料）
@@ -1064,17 +1102,17 @@ const tier = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'static'
 
 > 以下需要大吳提供或確認：
 
-- [x] **網域名稱**：**bigwoo.app**（待購買）
-- [ ] **完整經歷時間軸**：2000（ASP/CS）→ 2002（PHP/電競）→ ？→ ？→ 現在（CTO），中間階段日後補充到 `timeline.json`
-- [ ] **代表性專案清單**：日後補充到 `projects.json`
-- [ ] **服務項目確認**：日後補充到 `services.json`
+- [x] **網域名稱**：**bigwoo.app**（名稱已確定，尚未購買）
+- [ ] **完整經歷時間軸**：2000（ASP/CS）→ 2002（PHP/電競）→ ？→ ？→ 現在（CTO），中間階段日後補充到 `timeline.json`（Phase 1 先用 PRD 中已有的 placeholder 資料）
+- [ ] **代表性專案清單**：日後補充到 `projects.json`（Phase 1 先放 CashBack 等已知專案作 placeholder）
+- [ ] **服務項目確認**：日後補充到 `services.json`（Phase 1 先用 PRD 中暫定的 5 項服務）
 - [x] **聯繫方式**：Facebook (iambigwoo) / Instagram (bigwoo) / Line (iambigwoo) / GitHub (BIGWOO)
 - [x] **Email**：不公開，全部走聯繫表單
 - [x] **表單通知管道**：Email 轉寄到 bigwoo@gmail.com + 資料庫持久化（Phase 1 即包含）
 - [x] **頭像**：暫時使用風格化頭像
 - [x] **文案語氣**：程式碼英文 + 註解中文（如 `const role = "CTO" // 技術長`）
 - [x] **OG Image**：沿用 FB 封面圖風格
-- [x] **Blog**：Phase 1 即包含，用 MDX 格式，由小老婆1號協助撰稿增加 SEO 材料
+- [x] **Blog**：Phase 2 加入，用 MDX 格式，由小老婆1號協助撰稿增加 SEO 材料
 
 ---
 
@@ -1108,6 +1146,7 @@ iambigwoo/
 │   ├── contact/page.tsx        # 聯繫
 │   ├── not-found.tsx           # 404 彩蛋
 │   └── feed.xml/route.ts       # RSS Feed
+├── mdx-components.tsx            # ⚠️ 必須在專案根目錄（App Router 規定）
 ├── components/
 │   ├── ui/                     # shadcn/ui components
 │   ├── code-block.tsx          # 核心：程式碼偽裝文案元件
@@ -1118,8 +1157,7 @@ iambigwoo/
 │   ├── footer.tsx              # 頁尾
 │   ├── command-palette.tsx     # Cmd+K
 │   ├── contact-form.tsx        # 聯繫表單
-│   ├── mdx-components.tsx      # MDX 自訂元件
-│   └── theme-toggle.tsx        # 主題切換
+│   └── theme-toggle.tsx        # 主題切換（Phase 3）
 ├── content/
 │   ├── data/                   # ← JSON 資料（改這裡就改網站內容）
 │   │   ├── profile.json        # 個人資料、技術棧
