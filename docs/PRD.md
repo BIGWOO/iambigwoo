@@ -1,9 +1,9 @@
 # iambigwoo — 個人官網 PRD
 
-> **Version:** 0.3.0 (Round 2 Reviewed)
+> **Version:** 0.4.0 (Round 3 Reviewed — Implementation Ready)
 > **Last Updated:** 2026-03-23
 > **Author:** 大吳 + 小老婆1號
-> **Status:** ✅ Reviewed (Codex GPT-5.4 可行性審查通過，已修正)
+> **Status:** ✅ Implementation Ready（經 3 輪 Codex GPT-5.4 審查，0 Critical）
 
 ---
 
@@ -59,7 +59,7 @@ const bigwoo = {
 | GSAP React Binding | @gsap/react | 2.1.2 | useGSAP hook |
 | Smooth Scroll | Lenis | 1.3.19 | Apple 式絲滑慣性滾動 |
 | Code Highlight | Shiki + rehype-pretty-code | 1.29.2 / 0.14.3 | 語法高亮（Catppuccin Mocha 主題）⚠️ rehype-pretty-code 目前支援 shiki ^1.0.0 |
-| Blog (MDX) | @next/mdx + @mdx-js/react | latest | Next.js 官方 MDX 整合（本地檔案最佳方案） |
+| Blog (MDX) | @next/mdx + @mdx-js/react | 16.2.1 / 3.1.1 | Next.js 官方 MDX 整合（本地檔案最佳方案，Phase 2） |
 | Blog (Frontmatter) | gray-matter | 4.0.3 | MDX frontmatter 解析（Phase 2） |
 | Blog (Reading Time) | reading-time | 1.5.0 | 閱讀時間估算（Phase 2） |
 | Blog (RSS) | feed | 5.2.0 | RSS / Atom / JSON Feed 生成（Phase 2） |
@@ -70,7 +70,7 @@ const bigwoo = {
 | shadcn/ui 底層 | class-variance-authority / clsx / tailwind-merge | 0.7.1 / 2.1.1 / 3.5.0 | 變體樣式 + class 合併 |
 | Deployment (Frontend) | Vercel | — | Edge + Analytics |
 | Deployment (Backend/API) | Railway | — | PostgreSQL + 聯繫表單 DB 持久化（Phase 1） |
-| Email Service | Resend | latest | 聯繫表單 Email 通知 → bigwoo@gmail.com |
+| Email Service | Resend | 6.9.4 | 聯繫表單 Email 通知 → bigwoo@gmail.com |
 | Anti-Spam | Cloudflare Turnstile | — | 無感人機驗證（Phase 1） |
 | Domain | **bigwoo.app**（待購買） | — | — |
 
@@ -334,7 +334,31 @@ export const featuredProjects: Project[] = [
     status: "production",
     impact: "處理數百萬筆交易",
   },
-  // ... more projects
+  {
+    name: "FreeStore 免費開店平台",
+    role: "Tech Lead & Architect",
+    stack: ["PHP", "MySQL", "Vue.js", "GCP"],
+    highlights: [
+      "多店鋪 SaaS 架構",
+      "自訂前台模板系統",
+      "整合金流與物流",
+    ],
+    status: "production",
+    impact: "服務數百家商店",
+  },
+  {
+    name: "AI Agent 工作流自動化",
+    role: "Builder & Architect",
+    stack: ["TypeScript", "OpenAI", "Claude", "MCP"],
+    highlights: [
+      "Agentic Architecture 實踐",
+      "多 Agent 協作系統",
+      "MCP Protocol 整合",
+    ],
+    status: "production",
+    impact: "團隊效率提升數倍",
+  },
+  // ... 其餘專案日後補充到 projects.json
 ]
 ```
 
@@ -431,7 +455,8 @@ const inquiry = await bigwoo.contact({
   message: string,                       // 想聊什麼
 })
 
-// 送出後的回應
+// 送出後的畫面顯示（純展示用文案，非實際 API 回應）
+// 技術實作使用 Server Action，此處僅為 UX 展示文案
 return new Response("收到！我會盡快回覆你 ☕", {
   status: 202,
   headers: { "x-reply-within": "48h" }
@@ -934,7 +959,7 @@ const fonts = {
 
 - 動畫只用 `transform` 和 `opacity`（不觸發 layout/paint）
 - 重動畫區段用 `will-change: transform`
-- 遵循**三級降級策略**（見 8.3 節）：行動裝置靜態版、一般桌機簡化版、高階桌機完整版
+- 遵循**三級降級策略**（見 8.4 節）：行動裝置靜態版、一般桌機簡化版、高階桌機完整版
 - `prefers-reduced-motion: reduce` → 所有 scrub/pin 降級為靜態展示
 - Lenis 在低效能裝置 / 行動裝置上 fallback 為原生滾動
 - Glassmorphism `backdrop-filter: blur()` 在不支援的裝置上降級為 solid background
@@ -1143,7 +1168,9 @@ iambigwoo/
 │   ├── blog/
 │   │   ├── page.tsx            # 文章列表
 │   │   └── [slug]/page.tsx     # 文章內頁
-│   ├── contact/page.tsx        # 聯繫
+│   ├── contact/
+│   │   ├── page.tsx            # 聯繫頁面
+│   │   └── actions.ts          # Server Action（DB 寫入 + Resend 寄信 + Turnstile 驗證）
 │   ├── not-found.tsx           # 404 彩蛋
 │   └── feed.xml/route.ts       # RSS Feed
 ├── mdx-components.tsx            # ⚠️ 必須在專案根目錄（App Router 規定）
@@ -1177,7 +1204,10 @@ iambigwoo/
 ├── lib/
 │   ├── data.ts                 # JSON 讀取工具
 │   ├── schemas.ts              # Zod schemas for JSON validation
-│   ├── mdx.ts                  # MDX 解析工具
+│   ├── db.ts                   # Railway PostgreSQL 連線（Prisma or Drizzle）
+│   ├── email.ts                # Resend email 發送工具
+│   ├── turnstile.ts            # Cloudflare Turnstile 驗證
+│   ├── mdx.ts                  # MDX 解析工具（Phase 2）
 │   ├── gsap.ts                 # GSAP + ScrollTrigger + Lenis 初始化（Integration Contract）
 │   ├── fonts.ts                # 字型設定
 │   └── utils.ts                # 工具函式
